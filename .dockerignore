@@ -1,0 +1,8 @@
+.git
+.venv
+backend/.venv
+backend/books.db
+backend/recommenders/*.pkl
+__pycache__
+**/__pycache__
+*.pyc

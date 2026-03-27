@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - app-data:/app/data        # persists SQLite DB and trained models
+    environment:
+      DB_PATH: /app/data/books.db
+    restart: unless-stopped
+
+volumes:
+  app-data:
