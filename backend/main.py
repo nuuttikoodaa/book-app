@@ -1,6 +1,13 @@
 import sys
 import os
+import logging
 sys.path.insert(0, os.path.dirname(__file__))
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 from fastapi import FastAPI, Query, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -107,6 +114,8 @@ def log_interaction(body: InteractionIn):
             "INSERT INTO interactions (username, book_id, action, weight) VALUES (?, ?, ?, ?)",
             (body.username, body.book_id, body.action, weight),
         )
+    logging.info("interaction | user=%-20s book=%-30s action=%-15s weight=%+d",
+                 body.username, body.book_id, body.action, weight)
     return {"status": "ok", "weight": weight}
 
 
