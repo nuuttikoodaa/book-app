@@ -201,7 +201,7 @@ def train(model: str = Query(..., description="mf or gru")):
 # Serve frontend
 # ---------------------------------------------------------------------------
 
-FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend")
 
 @app.get("/")
 def serve_index():
