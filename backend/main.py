@@ -18,6 +18,7 @@ import httpx
 
 from database import init_db, get_conn
 from recommenders import trending, previously_liked, matrix_factorization, sequential
+import seed as seed_module
 
 app = FastAPI(title="Book Recommender")
 
@@ -36,6 +37,9 @@ PAGE_SIZE = 30
 @app.on_event("startup")
 def startup():
     init_db()
+    if os.environ.get("POPULATE_DB") == "1":
+        seed_module.seed()
+        logging.info("POPULATE_DB=1: seed data loaded.")
     matrix_factorization.load()
     sequential.load()
 
