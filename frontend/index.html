@@ -351,6 +351,10 @@
     <button id="reading-list-btn">
       📖 Reading List <span id="reading-list-count">0</span>
     </button>
+    <label style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;cursor:pointer;white-space:nowrap;">
+      <input type="checkbox" id="hide-reviewed-toggle" style="accent-color:var(--accent);width:14px;height:14px;" />
+      Hide reviewed
+    </label>
   </div>
 </header>
 
@@ -406,6 +410,7 @@
   let currentMode = 'search';  // 'search' | 'recommendations'
   let readingListIds = new Set();
   let hiddenIds = new Set();
+  let hideReviewed = false;
   let currentBooks = [];
 
   // ---- DOM refs ----
@@ -419,7 +424,8 @@
   const searchInput  = document.getElementById('search-input');
   const searchBtn    = document.getElementById('search-btn');
   const recsBtn      = document.getElementById('recs-btn');
-  const rlBtn        = document.getElementById('reading-list-btn');
+  const rlBtn             = document.getElementById('reading-list-btn');
+  const hideReviewedToggle = document.getElementById('hide-reviewed-toggle');
   const rlCount      = document.getElementById('reading-list-count');
   const rlPanel      = document.getElementById('reading-panel');
   const rlItems      = document.getElementById('reading-list-items');
@@ -439,6 +445,8 @@
     if (saved) usernameEl.value = saved;
     const savedHidden = JSON.parse(localStorage.getItem('bookapp_hidden') || '[]');
     hiddenIds = new Set(savedHidden);
+    hideReviewed = localStorage.getItem('bookapp_hide_reviewed') === 'true';
+    hideReviewedToggle.checked = hideReviewed;
   }
 
   usernameEl.addEventListener('change', () => {
@@ -536,7 +544,19 @@
     }
     books.forEach(book => {
       if (hiddenIds.has(book.book_id)) return;
+      if (hideReviewed && readingListIds.has(book.book_id)) return;
       grid.appendChild(buildCard(book));
+    });
+  }
+
+  function applyHideReviewed() {
+    grid.querySelectorAll('.book-card').forEach(card => {
+      const id = card.dataset.bookId;
+      if (hideReviewed && readingListIds.has(id)) {
+        card.classList.add('hidden-card');
+      } else if (!hiddenIds.has(id)) {
+        card.classList.remove('hidden-card');
+      }
     });
   }
 
@@ -608,6 +628,7 @@
     sendInteraction(username, book.book_id, 'reading_list');
     addToReadingListPanel(book);
     updateRLCount();
+    if (hideReviewed) card.classList.add('hidden-card');
     showToast(`Added "${book.title}" to your reading list.`);
   }
 
@@ -684,6 +705,13 @@
   function updateRLCount() {
     rlCount.textContent = readingListIds.size;
   }
+
+  // ---- Hide reviewed toggle ----
+  hideReviewedToggle.addEventListener('change', () => {
+    hideReviewed = hideReviewedToggle.checked;
+    localStorage.setItem('bookapp_hide_reviewed', hideReviewed);
+    applyHideReviewed();
+  });
 
   // ---- Pagination ----
   prevBtn.addEventListener('click', () => { if (currentPage > 1 && currentMode === 'search') doSearch(currentPage - 1); });
