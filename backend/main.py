@@ -94,7 +94,7 @@ async def search_books(query: str = "fiction", page: int = 1):
 # Interactions
 # ---------------------------------------------------------------------------
 
-ACTION_WEIGHTS = {"reading_list": 2, "info": 1, "hide": -1}
+ACTION_WEIGHTS = {"reading_list": 2, "info": 0.1, "hide": -1}
 
 
 class InteractionIn(BaseModel):

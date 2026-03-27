@@ -34,7 +34,7 @@ def init_db():
                 username TEXT NOT NULL,
                 book_id TEXT NOT NULL,
                 action TEXT NOT NULL,
-                weight INTEGER NOT NULL,
+                weight REAL NOT NULL,
                 timestamp TEXT DEFAULT (datetime('now'))
             );
 
