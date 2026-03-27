@@ -70,10 +70,14 @@ def seed():
 
         conn.execute("INSERT OR IGNORE INTO users (username) VALUES ('user1')")
 
-        conn.executemany("""
-            INSERT INTO interactions (username, book_id, action, weight)
-            VALUES (?, ?, ?, ?)
-        """, INTERACTIONS)
+        existing = conn.execute(
+            "SELECT COUNT(*) FROM interactions WHERE username = 'user1'"
+        ).fetchone()[0]
+        if existing == 0:
+            conn.executemany("""
+                INSERT INTO interactions (username, book_id, action, weight)
+                VALUES (?, ?, ?, ?)
+            """, INTERACTIONS)
 
     print(f"Seeded {len(BOOKS)} books and {len(INTERACTIONS)} interactions for user1.")
 
