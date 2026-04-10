@@ -4,6 +4,5 @@ httpx==0.28.1
 scikit-learn==1.8.0
 pandas==3.0.1
 numpy==2.4.3
-# Optional — install for ML models:
-# scikit-surprise==1.1.4
-# torch==2.11.0
+scikit-surprise==1.1.4
+torch==2.11.0
