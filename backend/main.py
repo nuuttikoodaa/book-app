@@ -215,6 +215,17 @@ def explain(username: str, book_id: str, model: str = "trending"):
 # Training
 # ---------------------------------------------------------------------------
 
+@app.get("/model-status")
+def model_status(model: str):
+    if model == "mf":
+        trained = matrix_factorization._model is not None
+    elif model == "gru":
+        trained = sequential._model is not None
+    else:
+        raise HTTPException(400, "model must be 'mf' or 'gru'")
+    return {"model": model, "trained": trained}
+
+
 @app.post("/train")
 def train(model: str = Query(..., description="mf or gru")):
     if model == "mf":

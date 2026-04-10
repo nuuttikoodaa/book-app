@@ -334,6 +334,11 @@
       pointer-events: none;
     }
     #toast.show { opacity: 1; }
+
+    .dot-trained   { color: var(--success); }
+    .dot-untrained { color: var(--warn); }
+    #train-status  { font-size: 12px; white-space: nowrap; }
+    #train-btn:disabled { opacity: .5; cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -348,6 +353,8 @@
     <input type="text" id="search-input" placeholder="Search books…" />
     <button class="btn-primary" id="search-btn">Search</button>
     <button id="recs-btn" class="btn-secondary">Get Recommendations</button>
+    <button id="train-btn" class="btn-secondary" style="display:none">⚙️ Train Model</button>
+    <span id="train-status" style="display:none"></span>
     <button id="reading-list-btn">
       📖 Reading List <span id="reading-list-count">0</span>
     </button>
@@ -424,6 +431,8 @@
   const searchInput  = document.getElementById('search-input');
   const searchBtn    = document.getElementById('search-btn');
   const recsBtn      = document.getElementById('recs-btn');
+  const trainBtn     = document.getElementById('train-btn');
+  const trainStatus  = document.getElementById('train-status');
   const rlBtn             = document.getElementById('reading-list-btn');
   const hideReviewedToggle = document.getElementById('hide-reviewed-toggle');
   const rlCount      = document.getElementById('reading-list-count');
@@ -487,8 +496,10 @@
         opt.title = m.description;
         modelSelect.appendChild(opt);
       });
+      updateTrainUI();
     } catch (e) {
       modelSelect.innerHTML = '<option value="trending">Trending</option>';
+      updateTrainUI();
     }
   }
 
@@ -721,7 +732,56 @@
   searchBtn.addEventListener('click', () => doSearch(1));
   searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
   recsBtn.addEventListener('click', doRecommendations);
-  modelSelect.addEventListener('change', () => { if (currentMode === 'recommendations') doRecommendations(); });
+  const TRAINABLE_MODELS = { matrix_factorization: 'mf', sequential: 'gru' };
+
+  async function updateTrainUI() {
+    const model = modelSelect.value;
+    const trainKey = TRAINABLE_MODELS[model];
+    if (!trainKey) {
+      trainBtn.style.display = 'none';
+      trainStatus.style.display = 'none';
+      return;
+    }
+    trainBtn.style.display = '';
+    trainStatus.style.display = '';
+    trainStatus.innerHTML = '<span style="color:var(--muted)">Checking…</span>';
+    try {
+      const data = await apiFetch(`/model-status?model=${trainKey}`);
+      if (data.trained) {
+        trainStatus.innerHTML = '<span class="dot-trained">● Model trained</span>';
+      } else {
+        trainStatus.innerHTML = '<span class="dot-untrained">● Not yet trained</span>';
+      }
+    } catch {
+      trainStatus.innerHTML = '<span style="color:var(--muted)">Status unknown</span>';
+    }
+  }
+
+  trainBtn.addEventListener('click', async () => {
+    const model = modelSelect.value;
+    const trainKey = TRAINABLE_MODELS[model];
+    if (!trainKey) return;
+    trainBtn.disabled = true;
+    trainBtn.innerHTML = '<span class="spinner"></span> Training…';
+    trainStatus.innerHTML = '<span style="color:var(--muted)">Training in progress…</span>';
+    try {
+      const data = await apiFetch(`/train?model=${trainKey}`, { method: 'POST' });
+      trainStatus.innerHTML = '<span class="dot-trained">● Model trained</span>';
+      showToast(data.result);
+      if (currentMode === 'recommendations') doRecommendations();
+    } catch (e) {
+      trainStatus.innerHTML = '<span class="dot-untrained">● Training failed</span>';
+      showToast('Training failed: ' + e.message);
+    } finally {
+      trainBtn.disabled = false;
+      trainBtn.innerHTML = '⚙️ Train Model';
+    }
+  });
+
+  modelSelect.addEventListener('change', () => {
+    updateTrainUI();
+    if (currentMode === 'recommendations') doRecommendations();
+  });
 
   rlBtn.addEventListener('click', () => {
     rlPanel.classList.toggle('open');
