@@ -3,14 +3,27 @@
 ## Overview
 Book recommendation PoC — single-page web app with a FastAPI backend, SQLite storage, and four recommendation models. Users browse books from Open Library, interact with them, and receive personalised recommendations.
 
+## How to Run
+```bash
+make pull_and_start      # pull, build, seed DB, start
+# → http://localhost:8000
+
+make clear_database      # stop containers and wipe DB volume
+```
+
 ## What's Built
+
+### Infrastructure
+- **Dockerfile** — `python:3.13-slim`
+- **docker-compose.yml** — single service, named volume `app-data` for DB + model persistence
+- **Makefile** — `make pull_and_start` and `make clear_database`
 
 ### Backend (`backend/`)
 - **FastAPI** app serving REST API + frontend static file
 - **SQLite** schema: `users`, `books`, `interactions` tables
 - **Open Library API** integration for book search and cover images
-- **Interaction logging** with structured stdout logs (user, book, action, weight)
-- **`POPULATE_DB=1` env var** triggers seed data on startup
+- **Structured interaction logging** to stdout (user, book, action, weight)
+- **`POPULATE_DB=1`** env var triggers seed data on startup
 
 #### API Endpoints
 | Method | Path | Purpose |
@@ -32,31 +45,24 @@ Book recommendation PoC — single-page web app with a FastAPI backend, SQLite s
 | Hide | -1 |
 
 ### Recommendation Models (`backend/recommenders/`)
-| Model | ID | Status | Notes |
+| Model | ID | State | Notes |
 |---|---|---|---|
 | Trending | `trending` | Ready | SQL aggregate of positive weights across all users |
 | Previously Liked | `previously_liked` | Ready | TF-IDF cosine similarity on genre/author/description |
-| Matrix Factorization | `matrix_factorization` | Ready (needs training) | SVD via scikit-surprise; `POST /train?model=mf` |
-| Sequential GRU | `sequential` | Ready (needs training) | PyTorch GRU on interaction sequences; `POST /train?model=gru` |
+| Matrix Factorization | `matrix_factorization` | Ready, needs training | SVD via scikit-surprise; `POST /train?model=mf` |
+| Sequential GRU | `sequential` | Ready, needs training | PyTorch GRU on interaction sequences; `POST /train?model=gru` |
 
 All models fall back to a plain catalog listing if not yet trained.
 
 ### Frontend (`frontend/index.html`)
 - Single HTML file, vanilla JS + CSS Grid, dark theme
 - Username input (persisted to `localStorage`), default: `user1`
-- Model selector dropdown (live re-fetches recommendations on change)
+- Model selector dropdown (live re-fetches on change)
 - Book grid — ~30 books, paginated, with cover images
 - Per-card actions: Add to Reading List / Hide / Why this?
 - Collapsible reading list panel
 - "Why this?" modal with per-model explanations
-- **Hide reviewed** toggle — hides added/hidden books from grid, persisted
-
-### Infrastructure
-- **Dockerfile** — `python:3.13-slim`
-- **docker-compose.yml** — single service, named volume `app-data` for DB + model persistence
-- **Makefile** — two commands:
-  - `make pull_and_start` — pull, build, seed, start
-  - `make clear_database` — stop containers, delete volume
+- **Hide reviewed** toggle — hides added/hidden books from grid, persisted to `localStorage`
 
 ### Seed Data (`backend/seed.py`)
 Pre-loaded books and `reading_list` + `info` interactions for `user1`:
@@ -78,15 +84,8 @@ numpy==2.4.3
 # optional: scikit-surprise==1.1.4, torch==2.11.0
 ```
 
-## How to Run
-```bash
-make pull_and_start      # build, seed, and start
-# → http://localhost:8000
-```
-
 ## Pending / Next Steps
 - [ ] Train and validate Matrix Factorization model (needs ~10+ interactions across users)
 - [ ] Train and validate Sequential GRU model (needs ~20+ interactions per user)
 - [ ] Expand seed data with more users and interactions for meaningful ML training
-- [ ] "Why this?" explanations for baseline models could be richer
 - [ ] Consider adding a `/reset-interactions` endpoint for easier testing
