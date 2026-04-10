@@ -78,13 +78,16 @@ def _cache_books(books: list[dict]):
 @app.get("/books")
 async def search_books(query: str = "fiction", page: int = 1):
     offset = (page - 1) * PAGE_SIZE
-    async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.get(OPEN_LIBRARY_SEARCH, params={
-            "q": query,
-            "limit": PAGE_SIZE,
-            "offset": offset,
-            "fields": "key,title,author_name,first_publish_year,cover_i,subject,first_sentence",
-        })
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            resp = await client.get(OPEN_LIBRARY_SEARCH, params={
+                "q": query,
+                "limit": PAGE_SIZE,
+                "offset": offset,
+                "fields": "key,title,author_name,first_publish_year,cover_i,subject,first_sentence",
+            })
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Open Library API timed out — try again in a moment.")
     if resp.status_code != 200:
         raise HTTPException(502, "Open Library API error")
 
