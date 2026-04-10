@@ -17,7 +17,7 @@ from pydantic import BaseModel
 import httpx
 
 from database import init_db, get_conn
-from recommenders import trending, previously_liked, matrix_factorization, sequential
+from recommenders import trending, previously_liked, matrix_factorization, sequential, genre_match
 import seed as seed_module
 
 app = FastAPI(title="Book Recommender")
@@ -157,6 +157,14 @@ MODELS = {
         "label": "Sequential (GRU)",
         "description": "Deep learning model that learns from the order of your interactions.",
     },
+    "genre_match": {
+        "label": "Genre Match",
+        "description": "Books that share genres with your reading history.",
+    },
+    "keyword_match": {
+        "label": "Keyword Match",
+        "description": "Books matched by genre (2x) and keywords from title, author, and description.",
+    },
 }
 
 
@@ -175,6 +183,10 @@ def get_recommendations(username: str, model: str = "trending", n: int = 30):
         books = matrix_factorization.recommend(username, n)
     elif model == "sequential":
         books = sequential.recommend(username, n)
+    elif model == "genre_match":
+        books = genre_match.recommend_genre(username, n)
+    elif model == "keyword_match":
+        books = genre_match.recommend_keyword(username, n)
     else:
         raise HTTPException(400, "Unknown model")
     return {"books": books, "model": model}
@@ -190,6 +202,10 @@ def explain(username: str, book_id: str, model: str = "trending"):
         text = matrix_factorization.explain(username, book_id)
     elif model == "sequential":
         text = sequential.explain(username, book_id)
+    elif model == "genre_match":
+        text = genre_match.explain_genre(username, book_id)
+    elif model == "keyword_match":
+        text = genre_match.explain_keyword(username, book_id)
     else:
         raise HTTPException(400, "Unknown model")
     return {"explanation": text}
